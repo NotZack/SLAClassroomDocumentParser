@@ -9,5 +9,7 @@
 .gradle
 /build/
 
+src/main/resources/SLA_Classroom_Schedules_Fall_2019.csv
+
 # GitHub files
 README.md
