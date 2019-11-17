@@ -1,9 +1,11 @@
+package CSVParsing;
+
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-class Room {
+public class Room {
     private String subject;
     private String description;
     private String startDate;
@@ -29,6 +31,9 @@ class Room {
         dayAvailability = parseDayAvailability(Arrays.copyOfRange(rawCSVLine, 9, 14));
         instructor = rawCSVLine[15];
         instructorId = rawCSVLine[16];
+
+        System.out.println(name + " " + facilityName);
+
     }
 
     @NotNull

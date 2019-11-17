@@ -1,3 +1,6 @@
+import CSVParsing.CSVLoader;
+import UserInterfaceConnection.UserInterfaceSocket;
+
 import java.io.File;
 
 /**
@@ -6,14 +9,15 @@ import java.io.File;
 public class Main {
 
     /**
-     * Starts the application by loading the csv file(s) and opening a UserInterfaceSocket.
+     * Starts the application by loading the csv file(s) and opening a UserInterfaceConnection.UserInterfaceSocket.
      */
     private void startApp() {
+
         File csvToParse = new File("src/main/resources/SLA_Classroom_Schedules_Fall_2019.csv");
         CSVLoader loader = new CSVLoader(csvToParse);
         loader.loadCSV();
 
-        UserInterfaceSocket interfaceSocket = new UserInterfaceSocket(new CSVDataInteraction(loader.getCSVData()));
+        UserInterfaceSocket interfaceSocket = new UserInterfaceSocket();
         interfaceSocket.openSocket();
     }
 
