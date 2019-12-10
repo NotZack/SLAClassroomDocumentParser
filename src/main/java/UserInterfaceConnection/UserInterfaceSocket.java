@@ -57,10 +57,10 @@ public class UserInterfaceSocket {
         System.out.println("Client said: " + clientInput);
         if ("hello server".equals(clientInput)) {
             out.println("hello client");
-            out.flush();
-        } else {
-            out.println("unrecognised greeting");
-            out.flush();
         }
+        else {
+            out.println("unrecognised greeting");
+        }
+        out.flush();
     }
 }

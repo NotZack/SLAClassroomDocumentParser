@@ -1,6 +1,5 @@
 package CSVParsing;
 
-import CSVParsing.Room;
 import org.jetbrains.annotations.Contract;
 
 import java.io.*;
