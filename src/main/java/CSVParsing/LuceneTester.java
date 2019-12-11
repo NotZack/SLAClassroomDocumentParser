@@ -1,25 +1,24 @@
 package CSVParsing;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.flexible.core.builders.QueryBuilder;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.QueryBuilder;
 import org.jetbrains.annotations.NotNull;
 
 public class LuceneTester {
@@ -30,7 +29,6 @@ public class LuceneTester {
 
     public static void main(String[] args) {
         LuceneTester tester = new LuceneTester();
-
         tester.createIndex();
     }
 
@@ -40,50 +38,57 @@ public class LuceneTester {
 
             Analyzer analyzer = new StandardAnalyzer();
             IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
-            iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+            iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 
             IndexWriter writer = new IndexWriter(dir, iwc);
-            indexDoc(writer, Paths.get(FILE_PATH + FILE_NAME));
+            writer.deleteAll();
 
+            for (Document doc : indexCSVDoc(writer, Paths.get(FILE_PATH + FILE_NAME))) {
+                writer.addDocument(doc);
+            }
+            writer.commit();
             IndexReader reader = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(reader);
 
-            QueryBuilder parser = new QueryBuilder(analyzer);
-            Query q = parser.createPhraseQuery("contents", "MGMT");
-            TopDocs docs = searcher.search(q, MAX_SEARCH);
-            ScoreDoc[] scores = docs.scoreDocs;
+            // QUERY
+            Query query = new QueryParser("Subject", new StandardAnalyzer()).parse("mangt");
 
-            for (ScoreDoc score : scores) {
-                System.out.println(score);
-            }
+            // SEARCH
+            TopDocs topDocs = searcher.search(query, 763);
+            ScoreDoc[] hits = topDocs.scoreDocs;
+            System.out.println("Found " + hits.length + " hits.");
 
-        } catch (IOException e) {
+        } catch (IOException | ParseException e) {
             System.out.println(e);
         }
     }
 
-    private void indexDoc(@NotNull IndexWriter writer, @NotNull Path file) {
-        try (InputStream stream = Files.newInputStream(file)) {
-            Document doc = new Document();
+    @NotNull
+    private ArrayList<Document> indexCSVDoc(@NotNull IndexWriter writer, @NotNull Path file) {
+        ArrayList<Document> indexedDocs = new ArrayList<>();
+        try {
+            BufferedReader fileReader = Files.newBufferedReader(file);
+            String [] fields = fileReader.readLine().split("[,]");
 
-            Field pathField = new StringField("path", file.toString(), Field.Store.YES);
-            BufferedReader fileReader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
-            doc.add(pathField);
-            doc.add(new TextField("contents", fileReader));
-
-            if (writer.getConfig().getOpenMode() == IndexWriterConfig.OpenMode.CREATE) {
-                System.out.println("adding " + file);
-                writer.addDocument(doc);
-            }
-            else {
-                System.out.println("updating " + file);
-                writer.updateDocument(new Term("path", file.toString()), doc);
+            for (String line = fileReader.readLine(); line != null; line = fileReader.readLine()) {
+                indexedDocs.add(indexCSVLine(fields, line.split("[,]")));
             }
 
             fileReader.close();
-
         } catch (IOException e) {
             System.out.println(e);
         }
+
+        return indexedDocs;
+    }
+
+    @NotNull
+    private Document indexCSVLine(@NotNull String [] fields, @NotNull String [] lineToIndex) {
+        Document doc = new Document();
+        for (int i = 0; i < fields.length; i++) {
+            doc.add(new TextField(fields[i], lineToIndex[i], Field.Store.YES));
+        }
+
+        return doc;
     }
 }
