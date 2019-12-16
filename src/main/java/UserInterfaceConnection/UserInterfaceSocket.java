@@ -1,5 +1,6 @@
 package UserInterfaceConnection;
 
+import CSVParsing.LuceneIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -28,10 +29,7 @@ public class UserInterfaceSocket {
 
             acceptConnection(serverSocket);
 
-            String clientSays;
-            while ((clientSays = in.readLine()) != null) {
-                acceptInput(clientSays);
-            }
+
 
             System.out.println("Client text accepted");
 
@@ -53,14 +51,15 @@ public class UserInterfaceSocket {
         }
     }
 
-    private void acceptInput(String clientInput) {
-        System.out.println("Client said: " + clientInput);
-        if ("hello server".equals(clientInput)) {
-            out.println("hello client");
+    public void openCommunication(LuceneIndex luceneIndex) {
+        try {
+            String clientQuery;
+            while ((clientQuery = in.readLine()) != null) {
+                out.println(luceneIndex.parseQuery(clientQuery));
+            }
         }
-        else {
-            out.println("unrecognised greeting");
+        catch (IOException e) {
+            System.out.println(e);
         }
-        out.flush();
     }
 }
