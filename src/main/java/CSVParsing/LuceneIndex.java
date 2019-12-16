@@ -4,8 +4,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -24,15 +23,13 @@ public class LuceneIndex {
 
     public static final String FILE_NAME = "SLA_Classroom_Schedules_Fall_2019.csv";
     public static final String FILE_PATH = "src/main/resources/";
-    public static final int MAX_SEARCH = 10;
 
     private String[] indexFields;
     private IndexSearcher searcher;
 
 
-    public static void main(String[] args) {
-        LuceneIndex tester = new LuceneIndex();
-        tester.createIndex();
+    public LuceneIndex() {
+        createIndex();
     }
 
     private void createIndex() {
@@ -91,30 +88,48 @@ public class LuceneIndex {
     }
 
     public String parseQuery(String clientQuery) {
+
         StringBuilder topResults = new StringBuilder();
-        ArrayList<ScoreDoc> hits = new ArrayList<>();
+        ArrayList<Integer> hitDocIndices = new ArrayList<>();
+        ArrayList<String> filteredHits = new ArrayList<>();
 
         try {
             for (String indexField : indexFields) {
-                Query query = new QueryParser(indexField, new StandardAnalyzer()).parse(clientQuery);
-                hits.addAll(Arrays.asList(searcher.search(query, 763).scoreDocs));
+                Query query = new QueryParser(indexField, new StandardAnalyzer()).parse(clientQuery + "*");
+                ScoreDoc[] rawResults = searcher.search(query, 763).scoreDocs;
+                for (ScoreDoc rawDoc : rawResults) {
+                    hitDocIndices.add(rawDoc.doc);
+                }
+            }
+            
+            for (Integer rawDoc : hitDocIndices) {
+                filteredHits.add(searcher.doc(rawDoc).getField(indexFields[6]).stringValue());
             }
 
-            hits.sort((o1, o2) -> {
-                if (o1.score == o2.score)
-                    return 0;
-                return o1.score < o2.score ? -1 : 1;
-            });
+            HashSet<String> setFilter = new HashSet<>(filteredHits);
+            filteredHits.clear();
+            filteredHits.addAll(setFilter);
 
-            for (int i = 0; i < 10; i++) {
-                topResults.append(searcher.doc(hits.get(i).doc).get(indexFields[7])).append(", ");
+            Collections.sort(filteredHits);
+
+            if (filteredHits.size() > 0) {
+                int counter = 0;
+                for (String buildingRoom : filteredHits) {
+
+                    if (counter < 10) {
+                        counter++;
+                        topResults.append(buildingRoom).append(", ");
+                    }
+                    else {
+                        break;
+                    }
+                }
             }
-
-            System.out.println("Found " + hits.size() + " hits.");
+            System.out.println("Found " + hitDocIndices.size() + " hits.");
         }
         catch (IOException | ParseException e) {
             System.out.println(e);
         }
-        return topResults.toString();
+        return topResults.toString().equals("") ? "No results found" : topResults.toString();
     }
 }

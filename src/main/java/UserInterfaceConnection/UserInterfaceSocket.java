@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * A socket used to communicate with the user interface.
@@ -25,13 +26,9 @@ public class UserInterfaceSocket {
         try {
             System.out.println("Opening socket on port " + SOCKET_PORT);
             ServerSocket serverSocket = new ServerSocket(SOCKET_PORT);
-            System.out.println("Socket opened! Awaiting connection ...");
+            System.out.println("New socket opened! Awaiting connection ...");
 
             acceptConnection(serverSocket);
-
-
-
-            System.out.println("Client text accepted");
 
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -59,7 +56,8 @@ public class UserInterfaceSocket {
             }
         }
         catch (IOException e) {
-            System.out.println(e);
+            System.out.println(e + " or client disconnected");
+            openSocket();
         }
     }
 }
