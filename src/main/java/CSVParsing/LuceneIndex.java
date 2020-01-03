@@ -118,14 +118,14 @@ public class LuceneIndex {
 
                     if (counter < 10) {
                         counter++;
-                        topResults.append(buildingRoom).append(", ");
+                        topResults.append(buildingRoom).append(",");
                     }
                     else {
                         break;
                     }
                 }
             }
-            System.out.println("Found " + hitDocIndices.size() + " hits.");
+            System.out.println("Found " + filteredHits.size() + " unique hits.");
         }
         catch (IOException | ParseException e) {
             System.out.println(e);
