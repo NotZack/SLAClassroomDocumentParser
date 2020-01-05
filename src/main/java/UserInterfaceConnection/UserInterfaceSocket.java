@@ -14,7 +14,6 @@ public class UserInterfaceSocket {
 
     private static final int SOCKET_PORT = 5119;
 
-    private Socket clientSocket;
     private PrintWriter out;
     private BufferedReader in;
 
@@ -36,7 +35,7 @@ public class UserInterfaceSocket {
 
     private void acceptConnection(@NotNull ServerSocket serverSocket) {
         try {
-            clientSocket = serverSocket.accept();
+            Socket clientSocket = serverSocket.accept();
             clientSocket.setTcpNoDelay(true);
             out = new PrintWriter(new BufferedOutputStream(clientSocket.getOutputStream()), true);
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));

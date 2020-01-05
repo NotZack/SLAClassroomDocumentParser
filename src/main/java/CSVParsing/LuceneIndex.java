@@ -68,7 +68,14 @@ public class LuceneIndex {
             indexFields = fileReader.readLine().split("[,]");
 
             for (String line = fileReader.readLine(); line != null; line = fileReader.readLine()) {
-                indexedDocs.add(indexCSVLine(line.split("[,]")));
+
+                String[] splitLine = new String[17];
+                System.arraycopy(line.split("[,]", 16), 0, splitLine, 0, 16);
+
+                splitLine[16] = splitLine[15].substring(splitLine[15].lastIndexOf(',') + 1);
+                splitLine[15] = splitLine[15].substring(0, splitLine[15].lastIndexOf(',')).replace(',', ' ');
+
+                indexedDocs.add(indexCSVLine(splitLine));
             }
 
             fileReader.close();
@@ -156,7 +163,6 @@ public class LuceneIndex {
                 ArrayList<String> fieldsList = new ArrayList<>();
                 searcher.doc(rawDoc).getFields().forEach((field) -> fieldsList.add(field.stringValue()));
                 unfilteredResults.add(fieldsList);
-                System.out.println(fieldsList.toString());
             }
 
             return sortRoomByStartTime(unfilteredResults).toString();
