@@ -6,7 +6,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 
 /**
  * A socket used to communicate with the user interface.
@@ -52,11 +51,23 @@ public class UserInterfaceSocket {
         try {
             String clientQuery;
             while ((clientQuery = in.readLine()) != null) {
-                out.println(luceneIndex.parseQuery(clientQuery));
+                if (clientQuery.startsWith("Collect_Unique_Room_Data:")) {
+                    out.println(luceneIndex.collectRoomData(clientQuery.substring(clientQuery.indexOf(":") + 1)));
+                }
+                else {
+                    clientQuery = clientQuery.replaceAll("[^0-9a-zA-Z ]+", "");
+                    clientQuery = clientQuery.replaceAll(" +", " ");
+                    if (clientQuery.length() > 0 && !clientQuery.equals(" ")) {
+                        out.println(luceneIndex.parseInexactQuery(clientQuery));
+                    }
+                    else {
+                        out.println("Invalid query");
+                    }
+                }
             }
         }
         catch (IOException e) {
-            System.out.println(e + " or client disconnected");
+            System.out.println(e + " and/or client disconnected");
             openSocket();
         }
     }

@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -17,6 +18,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 public class LuceneIndex {
@@ -87,13 +89,19 @@ public class LuceneIndex {
         return doc;
     }
 
-    public String parseQuery(String clientQuery) {
+    public String parseInexactQuery(@NotNull String clientQuery) {
 
         StringBuilder topResults = new StringBuilder();
         ArrayList<Integer> hitDocIndices = new ArrayList<>();
         ArrayList<String> filteredHits = new ArrayList<>();
 
         try {
+            if (clientQuery.endsWith(" ")) {
+                clientQuery = clientQuery.substring(0, clientQuery.length() - 1);
+            }
+            if (clientQuery.contains(" ")) {
+                clientQuery = clientQuery.replaceAll(" ", "* AND ");
+            }
             for (String indexField : indexFields) {
                 Query query = new QueryParser(indexField, new StandardAnalyzer()).parse(clientQuery + "*");
                 ScoreDoc[] rawResults = searcher.search(query, 763).scoreDocs;
@@ -131,5 +139,47 @@ public class LuceneIndex {
             System.out.println(e);
         }
         return topResults.toString().equals("") ? "No results found" : topResults.toString();
+    }
+
+    public String collectRoomData(String roomName) {
+        ArrayList<Integer> hitDocIndices = new ArrayList<>();
+        ArrayList<List<String>> unfilteredResults = new ArrayList<>();
+
+        roomName = roomName.replaceAll(" ", "* AND ");
+        try {
+            Query query = new QueryParser(indexFields[6], new StandardAnalyzer()).parse(roomName);
+            ScoreDoc[] rawResults = searcher.search(query, 763).scoreDocs;
+            for (ScoreDoc rawDoc : rawResults) {
+                hitDocIndices.add(rawDoc.doc);
+            }
+            for (Integer rawDoc : hitDocIndices) {
+                ArrayList<String> fieldsList = new ArrayList<>();
+                searcher.doc(rawDoc).getFields().forEach((field) -> fieldsList.add(field.stringValue()));
+                unfilteredResults.add(fieldsList);
+                System.out.println(fieldsList.toString());
+            }
+
+            return sortRoomByStartTime(unfilteredResults).toString();
+
+        } catch (ParseException | IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    @NotNull
+    @Contract("_ -> param1")
+    private ArrayList<List<String>> sortRoomByStartTime(@NotNull ArrayList<List<String>> unsortedList) {
+        SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm:ss a");
+        unsortedList.sort(Comparator.comparing(o -> {
+            try {
+                return timeFormat.parse(o.get(7));
+            } catch (java.text.ParseException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }));
+        return unsortedList;
     }
 }
