@@ -161,7 +161,7 @@ public class LuceneIndex {
             }
             for (Integer rawDoc : hitDocIndices) {
                 ArrayList<String> fieldsList = new ArrayList<>();
-                searcher.doc(rawDoc).getFields().forEach((field) -> fieldsList.add(field.stringValue()));
+                searcher.doc(rawDoc).getFields().forEach((field) -> fieldsList.add(field.stringValue().trim()));
                 unfilteredResults.add(fieldsList);
             }
 
