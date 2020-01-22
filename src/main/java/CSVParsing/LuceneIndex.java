@@ -21,6 +21,9 @@ import org.apache.lucene.store.FSDirectory;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Indexes all using lucene
+ */
 public class LuceneIndex {
 
     public static final String FILE_NAME = "SLA_Classroom_Schedules_Fall_2019.csv";
@@ -34,6 +37,9 @@ public class LuceneIndex {
         createIndex();
     }
 
+    /**
+     * Creates a lucene index using the constant file name at the constant file path.
+     */
     private void createIndex() {
         try {
             Directory dir = FSDirectory.open(Paths.get(FILE_PATH));
@@ -60,6 +66,11 @@ public class LuceneIndex {
         }
     }
 
+    /**
+     * Indexes the document's content into lucene that is at the given path
+     * @param file The path of which to index the file's content
+     * @return The indexed fields of the document
+     */
     @NotNull
     private ArrayList<Document> indexCSVDoc(@NotNull Path file) {
         ArrayList<Document> indexedDocs = new ArrayList<>();
@@ -86,6 +97,11 @@ public class LuceneIndex {
         return indexedDocs;
     }
 
+    /**
+     * Indexes a single line of a document split by the lines fields into a lucene document
+     * @param lineToIndex The field split raw line to be indexed
+     * @return The indexed lucene document
+     */
     @NotNull
     private Document indexCSVLine(@NotNull String [] lineToIndex) {
         Document doc = new Document();
@@ -96,12 +112,18 @@ public class LuceneIndex {
         return doc;
     }
 
+    /**
+     * Searches the lucene index for the given phrase then returns the results as a string.
+     * @param clientQuery The inexact initial query text
+     * @return The result of the parsed query
+     */
     public String parseInexactQuery(@NotNull String clientQuery) {
 
         StringBuilder topResults = new StringBuilder();
         ArrayList<Integer> hitDocIndices = new ArrayList<>();
         ArrayList<String> filteredHits = new ArrayList<>();
 
+        // Builds an exact query accounting for multi-word queries and leading/trailing whitespace
         try {
             if (clientQuery.endsWith(" ")) {
                 clientQuery = clientQuery.substring(0, clientQuery.length() - 1);
@@ -121,12 +143,14 @@ public class LuceneIndex {
                 filteredHits.add(searcher.doc(rawDoc).getField(indexFields[6]).stringValue());
             }
 
+            //Gets rid of duplicate room results
             HashSet<String> setFilter = new HashSet<>(filteredHits);
             filteredHits.clear();
             filteredHits.addAll(setFilter);
 
             Collections.sort(filteredHits);
 
+            //Combines results into a string
             if (filteredHits.size() > 0) {
                 int counter = 0;
                 for (String buildingRoom : filteredHits) {
@@ -148,10 +172,16 @@ public class LuceneIndex {
         return topResults.toString().equals("") ? "No results found" : topResults.toString();
     }
 
+    /**
+     * Given an exact room name, returns the room use schedule
+     * @param roomName The room name to search for
+     * @return The sorted room schedule with no duplicates
+     */
     public String collectRoomData(String roomName) {
         ArrayList<Integer> hitDocIndices = new ArrayList<>();
         ArrayList<List<String>> unfilteredResults = new ArrayList<>();
 
+        //Queries the lucene index for the exact room data
         roomName = roomName.replaceAll(" ", "* AND ");
         try {
             Query query = new QueryParser(indexFields[6], new StandardAnalyzer()).parse(roomName);
@@ -174,6 +204,12 @@ public class LuceneIndex {
         return null;
     }
 
+    /**
+     * Sorts the room data according to the start times of the class sessions; removes duplicates and assumes
+     * non-overlapping times.
+     * @param unsortedList The list to sort start times
+     * @return The sorted list of of rooms in order of class session start times
+     */
     @NotNull
     @Contract("_ -> param1")
     private ArrayList<List<String>> sortRoomByStartTime(@NotNull ArrayList<List<String>> unsortedList) {

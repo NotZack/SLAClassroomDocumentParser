@@ -18,7 +18,7 @@ public class UserInterfaceSocket {
     private BufferedReader in;
 
     /**
-     * Opens a new socket used to communicate with the user interface.
+     * Opens a new socket used to communicate with the user interface on the constant port.
      */
     public void openSocket() {
         try {
@@ -33,6 +33,10 @@ public class UserInterfaceSocket {
         }
     }
 
+    /**
+     * Accepts any pending socket connection request.
+     * @param serverSocket The server socket to accept requests to
+     */
     private void acceptConnection(@NotNull ServerSocket serverSocket) {
         try {
             Socket clientSocket = serverSocket.accept();
@@ -46,13 +50,19 @@ public class UserInterfaceSocket {
         }
     }
 
+    /**
+     * Cleans and collects any data sent from the connected user then makes a query out of it.
+     * @param luceneIndex The lucene index to send queries to
+     */
     public void openCommunication(LuceneIndex luceneIndex) {
         try {
             String clientQuery;
             while ((clientQuery = in.readLine()) != null) {
+                //Checks for an exact room query request
                 if (clientQuery.startsWith("Collect_Unique_Room_Data:")) {
                     out.println(luceneIndex.collectRoomData(clientQuery.substring(clientQuery.indexOf(":") + 1)));
                 }
+                //Executes an inexact query request
                 else {
                     clientQuery = clientQuery.replaceAll("[^0-9a-zA-Z ]+", "");
                     clientQuery = clientQuery.replaceAll(" +", " ");
